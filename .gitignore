@@ -1,0 +1,4 @@
+tts_project/
+.idea/
+__pycache__/
+*.pyc
