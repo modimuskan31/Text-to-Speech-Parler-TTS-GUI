@@ -13,16 +13,18 @@ class TTSInputGUI:
         self.prompt_entry.pack()
 
         # Voice selection
-        self.voice_var = tk.StringVar(value="random")
+        self.voice_var = tk.StringVar(value="Standard")
         tk.Label(self.root, text="Voice Selection:").pack()
         tk.Radiobutton(self.root, text="Standard", variable=self.voice_var, value="Standard", command=self.toggle_custom).pack()
         tk.Radiobutton(self.root, text="Custom", variable=self.voice_var, value="custom", command=self.toggle_custom).pack()
 
+        # gender selection
+        tk.Label(self.root, text="Gender:").pack()
+        self.gender_var = tk.StringVar(value="female")
+        tk.OptionMenu(self.root, self.gender_var, "male", "female").pack()
+
         # Custom voice options (initially hidden)
         self.custom_frame = tk.Frame(self.root)
-        tk.Label(self.custom_frame, text="Gender:").pack()
-        self.gender_var = tk.StringVar(value="female")
-        tk.OptionMenu(self.custom_frame, self.gender_var, "male", "female").pack()
 
         tk.Label(self.custom_frame, text="Background:").pack()
         self.background_var = tk.StringVar(value="clear")
@@ -50,11 +52,11 @@ class TTSInputGUI:
         if not prompt:
             messagebox.showerror("Error", "Prompt cannot be empty!")
             return
+        gender = self.gender_var.get()
 
-        if self.voice_var.get() == "random":
-            description = "A random expressive voice"
+        if self.voice_var.get() == "Standard":
+            description = f"A standard {gender} expressive and neutral voice with clear pronunciation"
         else:
-            gender = self.gender_var.get()
             background = self.background_var.get()
             speech_type = self.speech_type_var.get()
             description = f"The {gender} speaker's voice is {speech_type} tone with a {background} background"
