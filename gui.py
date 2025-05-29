@@ -1,9 +1,34 @@
+import threading
+import logging
+import time
+
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+import torch
+
+from tts_logic import TTSLogic
 
 class TTSInputGUI:
     def __init__(self):
+        self.user_input = None
+        self.tts_logic = TTSLogic()
+
+
         self.root = tk.Tk()
+        self.root.title("Welcome to Parler Text to Speech!")
+
+        # Progress bar frame at the top
+        self.progress_frame = tk.Frame(self.root)
+        self.progress_frame.pack(pady=10)
+
+        self.progress_label = tk.Label(self.progress_frame, text="", font=("Arial", 10))
+        self.progress_label.pack()
+
+        self.progress_bar = ttk.Progressbar(self.progress_frame, orient="horizontal", length=300, mode="determinate",
+                                            maximum= 100)
+        self.progress_bar.pack()
+        self.progress_frame.pack_forget()  # Initially hidden
+
         # Create main frame to hold everything
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(pady=10)
@@ -41,22 +66,74 @@ class TTSInputGUI:
         self.button_frame.pack(pady=20)
         tk.Button(self.button_frame, text="Generate", command=self.submit).pack()
 
-        self.user_input = None
-
     def toggle_custom(self):
         if self.voice_var.get() == "custom":
             self.custom_frame.pack()
         else:
             self.custom_frame.pack_forget()
 
+    def generate_and_close(self):
+
+        try:
+            self.progress_bar["value"] = 20
+            self.progress_label.config(text="Loading model...")
+            self.root.update_idletasks()
+
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            # Load model and tokenizer
+            model = self.tts_logic.load_model(device)
+            tokenizer = self.tts_logic.load_tokenizer()
+
+            self.progress_bar["value"] = 40
+            self.progress_label.config(text="Tokenizing inputs...")
+            self.root.update_idletasks()
+            time.sleep(0.3)
+
+            # Tokenize input
+            input_ids, prompt_input_ids = self.tts_logic.prepare_inputs(tokenizer, self.user_input["prompt"],
+                                                                   self.user_input["description"], device)
+
+            self.progress_bar["value"] = 60
+            self.progress_label.config(text="Generating audio...")
+            self.root.update_idletasks()
+            time.sleep(0.3)
+
+            # Generate speech
+            audio_arr, sampling_rate = self.tts_logic.run_generation(model, input_ids, prompt_input_ids)
+
+            self.progress_bar["value"] = 80
+            self.progress_label.config(text="Saving audio...")
+            self.root.update_idletasks()
+            time.sleep(0.3)
+
+            output_path = self.tts_logic.save_audio(audio_arr, sampling_rate)
+
+            self.progress_bar["value"] = 100
+            self.progress_label.config(text="Completed!")
+            self.root.update_idletasks()
+            time.sleep(0.5)
+
+            self.progress_label.config(text="Playing the audio...")
+            self.root.update_idletasks()
+
+            self.tts_logic.play_audio(output_path)
+
+        except Exception as e:
+            logging.exception(f"Error occurred: {e}")
+            self.progress_label.config(text="Error occurred!")
+        finally:
+            self.progress_bar.stop()
+
     def submit(self):
         prompt = self.prompt_entry.get("1.0", tk.END).strip()
         if not prompt:
             messagebox.showerror("Error", "Prompt cannot be empty!")
             return
+
         gender = self.gender_var.get()
 
-        if self.voice_var.get() == "Standard":
+        if self.voice_var.get().lower() == "standard":
             description = f"A standard {gender} expressive and neutral voice with clear pronunciation"
         else:
             background = self.background_var.get()
@@ -67,7 +144,15 @@ class TTSInputGUI:
             "prompt": prompt,
             "description": description
         }
-        self.root.quit()  # Close the GUI
+
+        # Show progress bar
+        self.progress_label.config(text="Generating...")
+        self.progress_frame.pack()
+        self.progress_bar.start()
+
+        # Start a thread to generate the audio
+        thread = threading.Thread(target=self.generate_and_close)
+        thread.start()
 
     def run(self):
         self.root.mainloop()
