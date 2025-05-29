@@ -4,28 +4,30 @@ from tkinter import messagebox
 class TTSInputGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Welcome to Parler Text to Speech!")
-        self.root.geometry("500x500")
+        # Create main frame to hold everything
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack(pady=10)
 
         # Prompt
-        tk.Label(self.root, text="Enter Prompt to Speak:").pack()
-        self.prompt_entry = tk.Text(self.root, height=4, width=50)
+        tk.Label(self.main_frame, text="Enter Prompt to Speak:").pack()
+        self.prompt_entry = tk.Text(self.main_frame, height=4, width=50)
         self.prompt_entry.pack()
 
         # Voice selection
-        self.voice_var = tk.StringVar(value="Standard")
-        tk.Label(self.root, text="Voice Selection:").pack()
-        tk.Radiobutton(self.root, text="Standard", variable=self.voice_var, value="Standard", command=self.toggle_custom).pack()
-        tk.Radiobutton(self.root, text="Custom", variable=self.voice_var, value="custom", command=self.toggle_custom).pack()
+        tk.Label(self.main_frame, text="Voice Selection:").pack()
+        self.voice_var = tk.StringVar(value="standard")
+        tk.Radiobutton(self.main_frame, text="Standard", variable=self.voice_var, value="standard",
+                       command=self.toggle_custom).pack()
+        tk.Radiobutton(self.main_frame, text="Custom", variable=self.voice_var, value="custom",
+                       command=self.toggle_custom).pack()
 
-        # gender selection
-        tk.Label(self.root, text="Gender:").pack()
+        # Gender (always visible)
+        tk.Label(self.main_frame, text="Gender:").pack()
         self.gender_var = tk.StringVar(value="female")
-        tk.OptionMenu(self.root, self.gender_var, "male", "female").pack()
+        tk.OptionMenu(self.main_frame, self.gender_var, "male", "female").pack()
 
-        # Custom voice options (initially hidden)
-        self.custom_frame = tk.Frame(self.root)
-
+        # Custom voice options (toggle visibility)
+        self.custom_frame = tk.Frame(self.main_frame)
         tk.Label(self.custom_frame, text="Background:").pack()
         self.background_var = tk.StringVar(value="clear")
         tk.OptionMenu(self.custom_frame, self.background_var, "noisy", "clear", "slightly noisy").pack()
@@ -34,10 +36,10 @@ class TTSInputGUI:
         self.speech_type_var = tk.StringVar(value="monotone")
         tk.OptionMenu(self.custom_frame, self.speech_type_var, "monotone", "excited", "expressive").pack()
 
-        self.custom_frame.pack_forget()
-
-        # Submit button
-        tk.Button(self.root, text="Generate", command=self.submit).pack(pady=20)
+        # Submit button frame (always at the bottom)
+        self.button_frame = tk.Frame(self.root)
+        self.button_frame.pack(pady=20)
+        tk.Button(self.button_frame, text="Generate", command=self.submit).pack()
 
         self.user_input = None
 
