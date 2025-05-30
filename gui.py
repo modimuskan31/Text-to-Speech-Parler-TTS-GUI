@@ -5,6 +5,8 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 import torch
+from metrics_logger import PerformanceTracker
+
 
 from tts_logic import TTSLogic
 
@@ -80,6 +82,8 @@ class TTSInputGUI:
             self.custom_frame.pack_forget()
 
     def generate_and_close(self):
+        tracker = PerformanceTracker("Audio Generation")
+        tracker.start()
 
         try:
             self.progress_bar["value"] = 20
@@ -136,6 +140,7 @@ class TTSInputGUI:
             self.progress_label.config(text="Error occurred!")
         finally:
             self.progress_bar.stop()
+            tracker.log_metrics()
 
     def play_audio(self):
         if self.audio_path:
