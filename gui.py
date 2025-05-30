@@ -61,10 +61,17 @@ class TTSInputGUI:
         self.speech_type_var = tk.StringVar(value="monotone")
         tk.OptionMenu(self.custom_frame, self.speech_type_var, "monotone", "excited", "expressive").pack()
 
-        # Submit button frame (always at the bottom)
+        # Submit & Close buttons
         self.button_frame = tk.Frame(self.root)
         self.button_frame.pack(pady=20)
-        tk.Button(self.button_frame, text="Generate", command=self.submit).pack()
+
+        tk.Button(self.button_frame, text="Generate", command=self.submit).pack(side="left", padx=10)
+        tk.Button(self.button_frame, text="Close App", command=self.root.quit).pack(side="left", padx=10)
+
+        self.play_button = tk.Button(self.button_frame, text="Play Audio", state="disabled", command=self.play_audio)
+        self.play_button.pack(pady=5)
+
+        self.audio_path = None
 
     def toggle_custom(self):
         if self.voice_var.get() == "custom":
@@ -79,7 +86,7 @@ class TTSInputGUI:
             self.progress_label.config(text="Loading model...")
             self.root.update_idletasks()
 
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = "cpu"
 
             # Load model and tokenizer
             model = self.tts_logic.load_model(device)
@@ -117,13 +124,26 @@ class TTSInputGUI:
             self.progress_label.config(text="Playing the audio...")
             self.root.update_idletasks()
 
-            self.tts_logic.play_audio(output_path)
+            # Schedule the audio playback safely on the main GUI thread
+            self.audio_path = output_path
+            self.progress_label.config(text="Audio ready. Click 'Play' to listen.")
+            self.play_button.config(state="normal")  # Enable the play button
+
+
 
         except Exception as e:
             logging.exception(f"Error occurred: {e}")
             self.progress_label.config(text="Error occurred!")
         finally:
             self.progress_bar.stop()
+
+    def play_audio(self):
+        if self.audio_path:
+            try:
+                self.tts_logic.play_audio(self.audio_path)
+            except Exception as e:
+                logging.exception(f"Playback error: {e}")
+                messagebox.showerror("Playback Error", "Could not play audio.")
 
     def submit(self):
         prompt = self.prompt_entry.get("1.0", tk.END).strip()

@@ -1,6 +1,7 @@
 import soundfile as sf
-import simpleaudio as sa
-
+# import simpleaudio as sa
+import subprocess
+import platform
 from transformers import AutoTokenizer
 from parler_tts import ParlerTTSForConditionalGeneration
 
@@ -30,6 +31,5 @@ class TTSLogic:
         return output_path
 
     def play_audio(self, path):
-        wave_obj = sa.WaveObject.from_wave_file(path)
-        play_obj = wave_obj.play()
-        play_obj.wait_done()
+        if platform.system() == "Windows":
+            subprocess.Popen(['powershell', '-c', f'(New-Object Media.SoundPlayer "{path}").PlaySync();'])
